@@ -46,9 +46,9 @@ class Config:
             ],
             "wechat": {
                 "credentials": [
-                    {"appid": "", "appsecret": "", "author": ""},
-                    {"appid": "", "appsecret": "", "author": ""},
-                    {"appid": "", "appsecret": "", "author": ""},
+                    {"appid": "wx4470080f9783e5e7", "appsecret": "f6c130604e3cad03218f943c4b1fe731", "author": "mango"},
+                    # {"appid": "", "appsecret": "", "author": ""},
+                    # {"appid": "", "appsecret": "", "author": ""},
                 ]
             },
             "api": {
@@ -137,7 +137,7 @@ class Config:
             "need_auditor": False,
             "use_compress": False,
             "use_search_service": False,
-            "aipy_search_max_results": 5,
+            "aipy_search_max_results": 10,
         }
         self.default_aipy_config = {
             "workdir": "aipy_work",

@@ -19,9 +19,9 @@ platforms:
     weight: 0.01
 wechat:
   credentials:
-    - appid: ""
-      appsecret: ""
-      author: ""
+    - appid: "wx4470080f9783e5e7"
+      appsecret: "f6c130604e3cad03218f943c4b1fe731"
+      author: "mango"
     - appid: ""
       appsecret: ""
       author: ""
@@ -29,7 +29,7 @@ wechat:
       appsecret: ""
       author: ""
 api:
-  api_type: OpenRouter
+  api_type: Qwen
   Grok:
     key: XAI_API_KEY
     key_index: 0
@@ -44,9 +44,9 @@ api:
     key: OPENAI_API_KEY
     key_index: 0
     api_key:
+      - "sk-5605ed60821f4ed0b53a8fa299543e56"
       - ""
-      - ""
-    model_index: 3
+    model_index: 2
     model:
       - openai/deepseek-v3
       - openai/deepseek-r1
@@ -70,14 +70,13 @@ api:
     api_base: https://generativelanguage.googleapis.com
   OpenRouter:
     key: OPENROUTER_API_KEY
+    model_index: 0
     key_index: 0
     api_key:
       - ""
       - ""
-    model_index: 0
     model:
       - openrouter/deepseek/deepseek-chat-v3-0324:free
-      - openrouter/deepseek/deepseek-r1-0528:free
       - openrouter/deepseek/deepseek-prover-v2:free
       - openrouter/deepseek/deepseek-r1:free
       - openrouter/deepseek/deepseek-chat:free
@@ -88,11 +87,11 @@ api:
     api_base: https://openrouter.ai/api/v1
   Ollama:
     key: OPENAI_API_KEY
+    model_index: 0
     key_index: 0
     api_key:
       - tmp-key
       - ""
-    model_index: 0
     model:
       - ollama/deepseek-r1:14b
       - ollama/deepseek-r1:7b
@@ -123,5 +122,5 @@ use_template: true
 template: ""
 need_auditor: false
 use_compress: true
-use_search_service: false
-aipy_search_max_results: 5
+use_search_service: true
+aipy_search_max_results: 10

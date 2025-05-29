@@ -6,6 +6,7 @@ pydantic==2.11.3
 PyYAML==6.0.1
 Requests==2.32.3
 setuptools==65.5.0
-PySimpleGUI==4.60.5
 tomlkit==0.13.2
-aipyapp==0.1.28
+aipyapp==0.1.27
+fastapi==0.115.6
+uvicorn==0.32.1

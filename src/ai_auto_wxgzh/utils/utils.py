@@ -151,7 +151,7 @@ def extract_image_urls(html_content):
     for pattern in patterns:
         matches = re.findall(pattern, html_content, re.IGNORECASE)
         urls.extend(
-            [url for match in matches for url in (match.split(",") if "," in match else [match])]
+            [url.replace("amp;", "") for match in matches for url in (match.split(",") if "," in match else [match])]
         )
     return list(set(urls))
 
@@ -194,21 +194,27 @@ def download_and_save_image(image_url, local_image_folder):
         return None
 
 
-def compress_html(content, use_compress=True):
-    if use_compress:
-        return content
-
-    # 移除注释
-    content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
-    # 移除换行和制表符
-    content = re.sub(r"[\n\t]+", "", content)
-    # 移除多余空格（保留属性分隔空格）
-    content = re.sub(r"\s+", " ", content)
-    # 移除=、>、<、;、: 前后的空格
-    content = re.sub(r"\s*([=><;,:])\s*", r"\1", content)
-    # 移除标签间空格
-    content = re.sub(r">\s+<", "><", content)
-    return content
+def compress_html(html_content: str, aggressive: bool = False) -> str:
+    """压缩HTML内容以减少token消耗"""
+    try:
+        import re
+        
+        if not aggressive:
+            return html_content
+        
+        # 移除多余的空白字符
+        html_content = re.sub(r'\s+', ' ', html_content)
+        
+        # 移除注释
+        html_content = re.sub(r'<!--.*?-->', '', html_content, flags=re.DOTALL)
+        
+        # 移除标签间的空白
+        html_content = re.sub(r'>\s+<', '><', html_content)
+        
+        return html_content.strip()
+    except Exception as e:
+        log.print_log(f"压缩HTML时出错: {str(e)}")
+        return html_content
 
 
 def decompress_html(compressed_content, use_compress=True):
@@ -278,3 +284,27 @@ def open_url(file_url):
         return ""
     except Exception as e:
         return str(e)
+
+
+def extract_text_from_html(html_content: str) -> str:
+    """从HTML中提取纯文本内容"""
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # 移除script和style标签
+        for script in soup(["script", "style"]):
+            script.decompose()
+        
+        # 获取文本内容
+        text = soup.get_text()
+        
+        # 清理文本
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        text = ' '.join(chunk for chunk in chunks if chunk)
+        
+        return text
+    except Exception as e:
+        log.print_log(f"提取HTML文本时出错: {str(e)}")
+        return html_content
