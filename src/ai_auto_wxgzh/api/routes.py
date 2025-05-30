@@ -69,7 +69,7 @@ async def publish_article(request: PublishArticleRequest):
             message=message,
             article_url=article_url,
             media_id=media_id,
-            publish_id=publish_id
+            publish_id=str(publish_id)
         )
         
     except HTTPException:

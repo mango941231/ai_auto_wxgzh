@@ -122,6 +122,249 @@ def extract_html(html, max_length=64):
 
     return title, digest
 
+def extract_html_with_ai(
+    html_content: str,
+    target_audience: str = "年轻人",
+    style: str = "新颖有趣"
+) -> tuple:
+    """
+    使用AI从HTML内容中提取并生成吸引人的标题和摘要
+    
+    Args:
+        html_content: HTML内容
+        target_audience: 目标受众，如"年轻人"、"职场人士"、"科技爱好者"等
+        style: 标题风格，如"新颖有趣"、"专业严谨"、"幽默风趣"等
+        
+    Returns:
+        tuple[标题, 摘要]
+    """
+    try:
+        from langchain_openai import ChatOpenAI
+        from langchain_core.messages import HumanMessage, SystemMessage
+        from src.ai_auto_wxgzh.config.config import Config
+        
+        # 获取配置
+        config = Config.get_instance()
+        api_key = config.api_key
+        api_base = config.api_apibase
+        model = config.api_model
+        
+        if not api_key:
+            log.print_log("API密钥未配置，使用传统方法提取标题摘要")
+            return extract_html(html_content, max_length=120)
+        
+        # 初始化AI模型
+        llm = ChatOpenAI(
+            model=model,
+            api_key=api_key,
+            base_url=api_base,
+            timeout=600,
+            temperature=0.7
+        )
+        
+        # 提取HTML中的纯文本内容
+        clean_content = extract_text_from_html(html_content)
+        if len(clean_content) > 2000:  # 限制内容长度以节省token
+            clean_content = clean_content[:2000] + "..."
+        
+        if not clean_content.strip():
+            log.print_log("HTML内容为空，无法生成标题和摘要")
+            return None, None
+        
+        # 构建AI提示词
+        system_prompt = """你是一位专业的微信公众号内容编辑专家，擅长创作吸引读者的标题和摘要。
+
+你的任务是：
+1. 分析文章内容的核心主题和亮点
+2. 创作符合微信公众号特点的吸引人标题
+3. 撰写简洁有力的文章摘要
+
+标题要求：
+- 长度控制在15-30个字符
+- 具有吸引力和点击欲望
+- 体现文章核心价值
+- 符合目标受众喜好
+- 可以适当使用数字、疑问句、感叹句等技巧
+- 避免标题党，确保与内容相符
+- 可以使用热门词汇和网络流行语（适度）
+
+摘要要求：
+- 长度控制在80-150个字符
+- 概括文章主要内容和价值点
+- 激发读者阅读兴趣
+- 语言简洁明了
+- 可以包含关键信息或亮点
+- 突出文章的实用性或趣味性
+
+输出格式：
+标题：[生成的标题]
+摘要：[生成的摘要]"""
+
+        user_prompt = f"""请为以下文章内容生成吸引人的微信公众号标题和摘要：
+
+【文章内容】
+{clean_content}
+
+【目标受众】
+{target_audience}
+
+【标题风格】
+{style}
+
+【创作要求】
+1. 标题要新颖有趣，能够吸引{target_audience}的注意
+2. 体现{style}的特点
+3. 摘要要简洁有力，突出文章价值
+4. 确保标题和摘要与内容高度相关
+5. 适合微信公众号传播特点
+6. 可以使用一些吸引眼球的技巧，如：
+   - 数字化表达（如"3个方法"、"5分钟学会"）
+   - 疑问句式（如"你知道吗？"、"为什么..."）
+   - 对比反差（如"竟然"、"没想到"）
+   - 实用价值（如"必看"、"干货"、"攻略"）
+
+请按照以下格式输出：
+标题：[你生成的标题]
+摘要：[你生成的摘要]"""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt)
+        ]
+        
+        response = llm.invoke(messages)
+        generated_content = response.content.strip()
+        
+        # 解析AI生成的标题和摘要
+        title, digest = _parse_ai_title_digest_response(generated_content)
+        
+        if title and digest:
+            log.print_log("AI生成标题和摘要成功")
+            return title, digest
+        else:
+            log.print_log("AI生成标题和摘要失败，使用传统方法", "warning")
+            # 回退到传统方法
+            return extract_html(html_content, max_length=120)
+            
+    except Exception as e:
+        log.print_log(f"AI提取标题和摘要时出错: {str(e)}", "error")
+        # 回退到传统方法
+        return extract_html(html_content, max_length=120)
+
+
+def _parse_ai_title_digest_response(response: str) -> tuple:
+    """解析AI响应中的标题和摘要"""
+    try:
+        # 使用正则表达式提取标题和摘要
+        title_pattern = r'标题[：:]\s*(.+?)(?=\n|摘要|$)'
+        digest_pattern = r'摘要[：:]\s*(.+?)(?=\n|$)'
+        
+        title_match = re.search(title_pattern, response, re.DOTALL)
+        digest_match = re.search(digest_pattern, response, re.DOTALL)
+        
+        title = title_match.group(1).strip() if title_match else None
+        digest = digest_match.group(1).strip() if digest_match else None
+        
+        # 清理标题和摘要中的多余字符
+        if title:
+            title = re.sub(r'["\'\[\]【】]', '', title).strip()
+            # 限制标题长度
+            if len(title) > 50:
+                title = title[:47] + "..."
+        
+        if digest:
+            digest = re.sub(r'["\'\[\]【】]', '', digest).strip()
+            # 限制摘要长度
+            if len(digest) > 200:
+                digest = digest[:197] + "..."
+        
+        return title, digest
+        
+    except Exception as e:
+        log.print_log(f"解析标题摘要响应时出错: {str(e)}", "error")
+        return None, None
+
+
+def generate_attractive_title(
+    content: str,
+    keywords: str = None,
+    style: str = "吸引眼球"
+) -> str:
+    """
+    专门生成吸引人的标题
+    
+    Args:
+        content: 文章内容
+        keywords: 关键词（可选）
+        style: 标题风格
+        
+    Returns:
+        生成的标题
+    """
+    try:
+        from langchain_openai import ChatOpenAI
+        from langchain_core.messages import HumanMessage, SystemMessage
+        from src.ai_auto_wxgzh.config.config import Config
+        
+        # 获取配置
+        config = Config.get_instance()
+        api_key = config.api_key
+        api_base = config.api_apibase
+        model = config.api_model
+        
+        if not api_key:
+            log.print_log("API密钥未配置，无法生成AI标题")
+            return None
+        
+        # 初始化AI模型
+        llm = ChatOpenAI(
+            model=model,
+            api_key=api_key,
+            base_url=api_base,
+            timeout=600,
+            temperature=0.8  # 提高创造性
+        )
+        
+        prompt = f"""请为以下内容生成一个非常吸引人的微信公众号标题：
+
+【内容】
+{content[:1000]}...
+
+【关键词】
+{keywords or "无特定关键词"}
+
+【风格要求】
+{style}
+
+【标题技巧】
+- 使用数字（如"3个秘诀"、"10分钟"）
+- 制造悬念（如"你绝对想不到"、"真相是..."）
+- 突出价值（如"必看"、"干货"、"实用"）
+- 情感共鸣（如"太真实了"、"说到心坎里"）
+- 时效性（如"最新"、"刚刚发现"）
+- 对比反差（如"竟然"、"没想到"）
+
+请只输出一个最佳标题，不要其他内容："""
+
+        messages = [
+            SystemMessage(content="你是微信公众号标题创作专家，专门创作高点击率的标题。"),
+            HumanMessage(content=prompt)
+        ]
+        
+        response = llm.invoke(messages)
+        title = response.content.strip()
+        
+        # 清理标题
+        title = re.sub(r'["\'\[\]【】]', '', title).strip()
+        if len(title) > 50:
+            title = title[:47] + "..."
+        
+        return title
+        
+    except Exception as e:
+        log.print_log(f"生成吸引人标题时出错: {str(e)}", "error")
+        return None
+
 
 def get_latest_file_os(dir_path):
     """

@@ -1,11 +1,12 @@
 import os
 import json
 from typing import Optional, Dict, Any
-from openai import OpenAI
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.ai_auto_wxgzh.config.config import Config
 from src.ai_auto_wxgzh.utils import log, utils
+import traceback
 
 
 class TemplateFusionService:
@@ -26,19 +27,18 @@ class TemplateFusionService:
             if not api_key:
                 raise ValueError("API密钥未配置")
             
-            # 创建OpenAI客户端
-            self.client = OpenAI(
+            self.model = ChatOpenAI(
+                model=model,
                 api_key=api_key,
-                base_url=api_base
+                base_url=api_base,
+                timeout=6000,
+                temperature=0.3
             )
-            self.model = model
             
             log.print_log(f"LLM客户端初始化成功，使用模型: {model}")
             
         except Exception as e:
             log.print_log(f"LLM客户端初始化失败: {str(e)}", "error")
-            self.client = None
-            self.model = None
     
     def fuse_content_with_template(
         self, 
@@ -59,34 +59,18 @@ class TemplateFusionService:
         Returns:
             融合后的HTML内容
         """
-        if not self.client:
-            log.print_log("LLM客户端未初始化，使用简单替换", "warning")
-            return self._simple_merge(content, template_content)
         
         try:
             # 构建提示词
             prompt = self._build_fusion_prompt(content, template_content, title, digest)
             
-            # 调用大模型
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": self._get_system_prompt()
-                    },
-                    {
-                        "role": "user", 
-                        "content": prompt
-                    }
-                ],
-                temperature=0.3,
-                max_tokens=8192
-            )
-            
-            # 提取生成的内容
-            generated_content = response.choices[0].message.content.strip()
-            
+            messages = [
+                SystemMessage(content=self._get_system_prompt()),
+                HumanMessage(content=prompt)
+            ]
+
+            response = self.model.invoke(messages)
+            generated_content = response.content.strip()
             # 提取HTML代码块
             html_content = self._extract_html_from_response(generated_content)
             
@@ -99,6 +83,7 @@ class TemplateFusionService:
                 
         except Exception as e:
             log.print_log(f"模板融合过程中出错: {str(e)}", "error")
+            log.print_log(f"错误堆栈跟踪: {traceback.format_exc()}", "error")
             return None
     
     def _get_system_prompt(self) -> str:

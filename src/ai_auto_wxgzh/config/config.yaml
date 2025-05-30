@@ -29,7 +29,7 @@ wechat:
       appsecret: ""
       author: ""
 api:
-  api_type: Qwen
+  api_type: Deepseek
   Grok:
     key: XAI_API_KEY
     key_index: 0
@@ -100,16 +100,16 @@ api:
     key: OPENAI_API_KEY
     key_index: 0
     api_key:
-      - ""
+      - "c97e8877-3203-4eea-af87-a49aae9943eb"
       - ""
     model_index: 0
     model:
-      - openai/deepseek-v3
-      - openai/deepseek-r1
-      - openai/deepseek-chat
-      - openai/deepseek-v3-0324
-      - openai/deepseek-chat-v3-0324
-    api_base: https://api.deepseek.com/v1
+      - deepseek-v3-250324
+      - deepseek-r1
+      - deepseek-chat
+      - deepseek-v3-0324
+      - deepseek-chat-v3-0324
+    api_base: https://ark.cn-beijing.volces.com/api/v3
 img_api:
   api_type: picsum
   ali:

@@ -52,7 +52,7 @@ class ArticlePublishService:
             
             # 提取标题和摘要（在应用模板之前）
             if not title or not digest:
-                extracted_title, extracted_digest = utils.extract_html(content)
+                extracted_title, extracted_digest = utils.extract_html_with_ai(content)
                 title = title or extracted_title
                 digest = digest or extracted_digest
             
@@ -74,7 +74,7 @@ class ArticlePublishService:
             
             if image_url is None:
                 log.print_log("生成图片出错，使用默认图片")
-                image_url = utils.get_res_path("UI\\bg.png", os.path.dirname(__file__) + "/../gui/")
+                image_url = utils.get_res_path("UI\\1748343508.jpg", os.path.dirname(__file__) + "/../gui/")
             
             # 上传封面图片
             media_id, _, err_msg = publisher.upload_image(image_url)
